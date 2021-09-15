@@ -1,0 +1,4 @@
+enum GameType {
+  offlineWithComp,
+  offlineWithUser,
+}

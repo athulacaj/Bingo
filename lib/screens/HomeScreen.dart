@@ -1,5 +1,7 @@
+import 'package:bingo/utility/gameType.dart';
 import 'package:flutter/material.dart';
 
+import 'GameScreen/gameScreen.dart';
 import 'with computer/play_with_computer.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -39,6 +41,12 @@ class _HomeScreenState extends State<HomeScreen> {
     if (i == 0) {
       Navigator.push(
           context, MaterialPageRoute(builder: (context) => PlayWithComputer()));
+    } else if (i == 1) {
+      Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) =>
+                  GameScreen(gameType: GameType.offlineWithUser)));
     }
   }
 }

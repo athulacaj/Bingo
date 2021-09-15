@@ -2,8 +2,10 @@ import 'dart:math';
 import 'package:bingo/Colors.dart';
 import 'package:bingo/screens/compUserScreen/compUserIndexScreen.dart';
 import 'package:bingo/screens/userScreen/userIndexScreen.dart';
+import 'package:bingo/utility/functions/webCheck.dart';
 import 'package:bingo/utility/gameControllerProvider.dart';
 import 'package:bingo/utility/gameCompProvider.dart';
+import 'package:bingo/utility/gameType.dart';
 import 'package:bingo/utility/gameUserProvider.dart';
 import 'package:flare_flutter/flare.dart';
 import 'package:flare_flutter/flare_actor.dart';
@@ -15,7 +17,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 class GameScreen extends StatefulWidget {
-  const GameScreen({Key? key}) : super(key: key);
+  final GameType gameType;
+  const GameScreen({required this.gameType});
 
   @override
   _GameScreenState createState() => _GameScreenState();
@@ -23,11 +26,13 @@ class GameScreen extends StatefulWidget {
 
 class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   ScrollController _scrollController = ScrollController();
+  bool _showWinBanner = true;
   late Size size;
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
+    _showWinBanner = true;
     SystemChrome.setEnabledSystemUIOverlays([SystemUiOverlay.bottom]);
     setGameDetails();
   }
@@ -43,8 +48,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void setGameDetails() {
+    Provider.of<GameControllerProvider>(context, listen: false)
+        .setGameType(widget.gameType);
+
     GameUserProvider.m = 5;
     GameComputerProvider.m = 5;
+
     if (!Provider.of<GameControllerProvider>(context, listen: false).isUserTurn)
       playComputer();
 
@@ -52,7 +61,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
       print(num);
       Provider.of<GameComputerProvider>(context, listen: false)
           .onOtherUserNumberSelected(num);
-      // shiftTurn();
       pointsController(() {
         playComputer();
       });
@@ -67,12 +75,17 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void playComputer() async {
-    await Future.delayed(Duration(milliseconds: 1300));
-    Provider.of<GameComputerProvider>(context, listen: false).play(context);
+    // play computer if gameType is  offline with computer
+    if (widget.gameType == GameType.offlineWithComp) {
+      await Future.delayed(Duration(milliseconds: 1300));
+      Provider.of<GameComputerProvider>(context, listen: false).play(context);
+    }
   }
 
   void shiftTurn() {
-    Provider.of<GameControllerProvider>(context, listen: false).shiftTurn();
+    if (widget.gameType == GameType.offlineWithComp) {
+      Provider.of<GameControllerProvider>(context, listen: false).shiftTurn();
+    }
   }
 
   void pointsController(Function afterGameFinishFunction) {
@@ -99,9 +112,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     return false;
   }
 
+  void resetGame() {
+    Provider.of<GameUserProvider>(context, listen: false).reset();
+    Provider.of<GameComputerProvider>(context, listen: false).reset();
+    Provider.of<GameControllerProvider>(context, listen: false).reset();
+  }
+
   @override
   Widget build(BuildContext context) {
     size = MediaQuery.of(context).size;
+    bool isWeb = KisWeb(size);
 
     return Scaffold(
       body: SafeArea(
@@ -123,18 +143,22 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 ],
               ),
             ),
-            Positioned(
-              top: 0,
-              left: 0,
-              child: Container(
-                height: size.height,
-                width: size.width * 1.6,
-                child: FlareActor("assets/flare/snow.flr",
-                    alignment: Alignment.center,
-                    fit: BoxFit.contain,
-                    animation: "idle"),
-              ),
-            ),
+            Container(
+                color: Colors.black.withOpacity(.94),
+                width: size.width,
+                height: size.height),
+            // Positioned(
+            //   top: 0,
+            //   left: 0,
+            //   child: Container(
+            //     height: size.height,
+            //     width: size.width * 1.6,
+            //     child: FlareActor("assets/flare/snow.flr",
+            //         alignment: Alignment.center,
+            //         fit: BoxFit.cover,
+            //         animation: "idle"),
+            //   ),
+            // ),
             Consumer<GameControllerProvider>(
                 builder: (context, gameControllerProvider, child) {
               bool isUserTurn = gameControllerProvider.isUserTurn;
@@ -169,36 +193,80 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   ])),
             ),
             // if the width > height app crash
+            widget.gameType != GameType.offlineWithUser
+                ? Positioned(
+                    top: isWeb ? (size.height * .2) + 35 : 50,
+                    right: 0,
+                    child: SizedBox(
+                        height: isWeb
+                            ? size.height
+                            : size.height - (size.width - 40) - 50,
+                        width: isWeb ? size.width / 2 : size.width,
+                        child: CompUserIndexScreen()),
+                  )
+                : Container(),
             Positioned(
-              top: 50,
-              height: size.height - (size.width - 40) - 90,
-              width: size.width,
-              child: CompUserIndexScreen(),
-            ),
-            Positioned(
-              left: 0,
-              top: size.height - (size.width - 40) - 50,
+              left: widget.gameType != GameType.offlineWithUser
+                  ? 0
+                  : isWeb
+                      ? size.width / 4
+                      : 0,
+              top: isWeb || widget.gameType == GameType.offlineWithUser
+                  ? size.height * .2
+                  : size.height - (size.width - 40) - 10,
               child: SizedBox(
                 // height: (size.width - 40),
-                width: size.width,
+                width: isWeb ? size.width / 2 : size.width,
                 child: UserIndexScreen(),
               ),
             ),
+            // Positioned(
+            //     bottom: 0,
+            //     left: 10,
+            //     child: FlatButton(
+            //         child: Text('Replay'),
+            //         onPressed: () {
+            //           resetGame();
+            //           setGameDetails();
+            //         })),
             Positioned(
-                bottom: 0,
-                left: 10,
-                child: FlatButton(
-                    child: Text('Replay'),
-                    onPressed: () {
-                      Provider.of<GameUserProvider>(context, listen: false)
-                          .reset();
-                      Provider.of<GameComputerProvider>(context, listen: false)
-                          .reset();
-                      Provider.of<GameControllerProvider>(context,
-                              listen: false)
-                          .reset();
-                      setGameDetails();
-                    })),
+              top: isWeb ? size.height * .6 : size.height / 2,
+              left: isWeb ? size.width / 4 : 0,
+              child: Container(
+                  height: size.height / 2,
+                  padding: EdgeInsets.all(4),
+                  alignment: Alignment.center,
+                  child: new RotatedBox(
+                      quarterTurns: isWeb ? 0 : 3,
+                      child: new Text(
+                        "You",
+                        style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            fontSize: 16),
+                      ))),
+            ),
+            widget.gameType != GameType.offlineWithUser
+                ? Positioned(
+                    top: isWeb ? size.height * .6 : 10,
+                    left: isWeb ? size.width / 1.3 : 0,
+                    child: Container(
+                        height: isWeb
+                            ? size.height / 2
+                            : size.height - (size.width - 40) - 90,
+                        padding: EdgeInsets.all(4),
+                        alignment: Alignment.center,
+                        child: new RotatedBox(
+                            quarterTurns: isWeb ? 0 : 3,
+                            child: new Text(
+                              "Computer",
+                              style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                  fontSize: 16),
+                            ))),
+                  )
+                : Container(),
             Consumer<GameControllerProvider>(
                 builder: (context, gameControllerProvider, child) {
               return gameControllerProvider.isGameFinished
@@ -212,26 +280,35 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                         child: Column(
                           children: [
                             Spacer(),
-                            Container(
-                              height: 90,
-                              width: size.width,
-                              color: Colors.white,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    child: Text(
-                                      "Result : $result",
-                                      style: TextStyle(
-                                          color: topColor,
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w600),
+                            _showWinBanner
+                                ? Container(
+                                    height: 110,
+                                    width: size.width,
+                                    color: Colors.white,
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        IconButton(
+                                            onPressed: () {
+                                              _showWinBanner = false;
+                                              setState(() {});
+                                            },
+                                            icon: Icon(Icons.close)),
+                                        Container(
+                                          child: Text(
+                                            "Result : $result",
+                                            style: TextStyle(
+                                                color: topColor,
+                                                fontSize: 20,
+                                                fontWeight: FontWeight.w600),
+                                          ),
+                                          padding: EdgeInsets.all(18),
+                                        ),
+                                      ],
                                     ),
-                                    padding: EdgeInsets.all(18),
-                                  ),
-                                ],
-                              ),
-                            ),
+                                  )
+                                : Container(),
                             Spacer(),
                             FlatButton(
                                 color: Colors.orange,
@@ -254,34 +331,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                       ))
                   : Container();
             }),
-            Positioned(
-              top: size.height / 2,
-              child: Container(
-                  height: size.height / 2,
-                  padding: EdgeInsets.all(4),
-                  alignment: Alignment.center,
-                  child: new RotatedBox(
-                      quarterTurns: 3,
-                      child: new Text(
-                        "You",
-                        style: TextStyle(
-                            fontWeight: FontWeight.w800, fontSize: 16),
-                      ))),
-            ),
-            Positioned(
-              top: 0,
-              child: Container(
-                  height: size.height - (size.width - 40) - 90,
-                  padding: EdgeInsets.all(4),
-                  alignment: Alignment.center,
-                  child: new RotatedBox(
-                      quarterTurns: 3,
-                      child: new Text(
-                        "Computer",
-                        style: TextStyle(
-                            fontWeight: FontWeight.w800, fontSize: 16),
-                      ))),
-            ),
           ],
         ),
       ),
@@ -307,6 +356,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   @override
   void deactivate() {
     // TODO: implement deactivate
+    resetGame();
     super.deactivate();
   }
 }

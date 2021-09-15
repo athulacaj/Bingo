@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:bingo/utility/gameType.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -14,11 +15,17 @@ enum GameTurn {
 class GameControllerProvider extends ChangeNotifier {
   int computerPoint = 0;
   int userPoint = 0;
-  bool isUserTurn = randomTurn();
+  bool isUserTurn = _randomTurn();
   bool isGameFinished = false;
+  static GameType _gameType = GameType.offlineWithComp;
   void shiftTurn() {
     isUserTurn = !isUserTurn;
     // notifyListeners();
+  }
+
+  void setGameType(GameType type) {
+    _gameType = type;
+    isUserTurn = _randomTurn();
   }
 
   void setGameFinished() {
@@ -33,16 +40,17 @@ class GameControllerProvider extends ChangeNotifier {
   }
 
   void reset() {
-    isUserTurn = randomTurn();
+    isUserTurn = _randomTurn();
     computerPoint = 0;
     userPoint = 0;
     isGameFinished = false;
     notifyListeners();
   }
-}
 
-bool randomTurn() {
-  var random = new Random();
-  int r = random.nextInt(10);
-  return r % 2 == 0;
+  static bool _randomTurn() {
+    var random = new Random();
+    int r = random.nextInt(10);
+    if (_gameType == GameType.offlineWithUser) return true;
+    return r % 2 == 0;
+  }
 }

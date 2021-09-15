@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:bingo/utility/functions/webCheck.dart';
 import 'package:bingo/utility/gameControllerProvider.dart';
 import 'package:bingo/utility/gameUserProvider.dart';
 import 'package:flare_flutter/flare_actor.dart';
@@ -18,6 +19,8 @@ class BuildBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
+    bool isWeb = KisWeb(size);
+
     GameUserProvider provider =
         Provider.of<GameUserProvider>(context, listen: false);
     GlobalKey key = GlobalKey();
@@ -34,8 +37,10 @@ class BuildBox extends StatelessWidget {
           }
         },
         child: Container(
-          width: (size.width - padding) / t,
-          height: (size.width - padding) / t,
+          width: (size.width * .9 - padding) / (isWeb ? t * 2.3 : t),
+          height: isWeb
+              ? (size.height * .63 - padding) / t
+              : (size.width - padding) / t,
           // color: Colors.red,
           key: key,
           // margin: EdgeInsets.all(.4),
@@ -47,7 +52,7 @@ class BuildBox extends StatelessWidget {
                     isRecentlySelected: provider.recentSelected == i),
                 child: Container(
                     width: (size.width - padding) / t - 6,
-                    height: (size.width - padding) / t - 6,
+                    height: (isWeb ? size.height : size.width - 0) / t - 6,
                     alignment: Alignment.center,
                     child: Text(
                       "${data['no']}",
@@ -65,8 +70,10 @@ class BuildBox extends StatelessWidget {
                   top: 0,
                   left: 0,
                   child: Container(
-                    width: (size.width - padding) / t,
-                    height: (size.width - padding) / t,
+                    width:
+                        (isWeb ? size.width * .35 : size.width - padding) / t,
+                    height:
+                        (isWeb ? size.height * .7 : size.width - padding) / t,
                     child: FlareActor("assets/flare/firework.flr",
                         alignment: Alignment.center,
                         fit: BoxFit.fill,

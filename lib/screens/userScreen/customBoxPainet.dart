@@ -1,4 +1,5 @@
 import 'package:bingo/Colors.dart';
+import 'package:bingo/utility/functions/webCheck.dart';
 import 'package:flutter/material.dart';
 
 class MyCustomBoxPaint extends CustomPainter {
@@ -8,6 +9,7 @@ class MyCustomBoxPaint extends CustomPainter {
   MyCustomBoxPaint({required this.data, required this.isRecentlySelected});
   @override
   void paint(Canvas canvas, Size size) {
+    bool isWeb = KisWeb(size);
     double width = size.width;
     double height = size.height;
     // draw box and background

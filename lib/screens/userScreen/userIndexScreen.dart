@@ -49,8 +49,6 @@ class UserIndexScreen extends StatelessWidget {
   }
 }
 
-void findPostionOfChildBox() {}
-
 Widget createLayout(BuildContext context, List<Map> numbersList) {
   List<Widget> columChildren = [];
   List<Widget> rowChildren = [];
