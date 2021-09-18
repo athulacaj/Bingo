@@ -45,7 +45,7 @@ class MyApp extends StatelessWidget {
       ),
 
       // home: GameScreen(),
-      initialRoute: '/HomeScreen',
+      initialRoute: '/StreamHomeScreen',
       routes: {
         '/HomeScreen': (context) => HomeScreen(),
         '/StreamHomeScreen': (context) => StreamHomeScreen(),

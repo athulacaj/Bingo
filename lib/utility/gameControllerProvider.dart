@@ -23,6 +23,11 @@ class GameControllerProvider extends ChangeNotifier {
     // notifyListeners();
   }
 
+  void setUserTurn(bool isUserTurn) {
+    this.isUserTurn = isUserTurn;
+    notifyListeners();
+  }
+
   void setGameType(GameType type) {
     _gameType = type;
     isUserTurn = _randomTurn();
@@ -50,7 +55,8 @@ class GameControllerProvider extends ChangeNotifier {
   static bool _randomTurn() {
     var random = new Random();
     int r = random.nextInt(10);
-    if (_gameType == GameType.offlineWithUser) return true;
+    if (_gameType == GameType.offlineWithUser ||
+        _gameType == GameType.onlineWithUSer) return true;
     return r % 2 == 0;
   }
 }
