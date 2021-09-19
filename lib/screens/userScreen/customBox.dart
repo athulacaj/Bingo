@@ -33,7 +33,7 @@ class BuildBox extends StatelessWidget {
                   .isUserTurn;
 
           if (data['selected'] == false && isUserTurn) {
-            provider.onNumberSelected(i, true);
+            provider.onNumberSelected(i, true, context);
           }
         },
         child: Container(

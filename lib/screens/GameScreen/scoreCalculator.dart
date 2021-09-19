@@ -1,6 +1,7 @@
 import 'package:bingo/utility/functions/findPoints.dart';
+import 'package:flutter/material.dart';
 
-class ScoreCalculator {
+class ScoreCalculator extends ChangeNotifier {
   List _itemsSelected = [];
   static Map _userGridArrangedListData = {};
   static Map pointsData = {};
@@ -9,34 +10,23 @@ class ScoreCalculator {
     // _userGridArrangedListData = {};
   }
   static void addUserGrid(String user, sortedList) {
-    List<Map> _numbersList = [];
-    for (int no in sortedList) {
-      _numbersList.add({
-        'no': no,
-        'selected': false,
-        'vertical': false,
-        'horizontal': false,
-        'diagonal': false,
-        'diagonalOp': false,
-      });
-    }
-    _userGridArrangedListData[user] = _numbersList;
+    _userGridArrangedListData[user] = sortedList;
     pointsData[user] = 0;
   }
 
-  void findPoints() {
+  static void findPoints() {
     for (String user in _userGridArrangedListData.keys) {
       FindPointsClass findPointsClass =
           FindPointsClass(5, _userGridArrangedListData[user], pointsData[user]);
       findPointsClass.findPoints((int p) {
         pointsData[user] = p;
-        print("point: $p");
       });
     }
+    print(pointsData);
   }
 
   void makeSelected(List selectedList) {
-    print(_userGridArrangedListData);
+    print(selectedList);
     for (String user in _userGridArrangedListData.keys) {
       for (int num in selectedList) {
         int i = findIndexOfUserList(_userGridArrangedListData[user], num);
@@ -44,6 +34,8 @@ class ScoreCalculator {
         if (i != -1) _userGridArrangedListData[user][i]['selected'] = true;
       }
     }
+    findPoints();
+    notifyListeners();
   }
 }
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bingo/screens/GameScreen/scoreCalculator.dart';
 import 'package:bingo/utility/gameCompProvider.dart';
 import 'package:flare_flutter/flare_cache.dart';
 import 'package:flare_flutter/provider/asset_flare.dart';
@@ -26,6 +27,7 @@ main() async {
     ChangeNotifierProvider(create: (context) => GameControllerProvider()),
     ChangeNotifierProvider(create: (context) => GameUserProvider()),
     ChangeNotifierProvider(create: (context) => GameComputerProvider()),
+    ChangeNotifierProvider(create: (context) => ScoreCalculator()),
   ], child: MyApp()));
 }
 
@@ -45,7 +47,7 @@ class MyApp extends StatelessWidget {
       ),
 
       // home: GameScreen(),
-      initialRoute: '/StreamHomeScreen',
+      initialRoute: '/HomeScreen',
       routes: {
         '/HomeScreen': (context) => HomeScreen(),
         '/StreamHomeScreen': (context) => StreamHomeScreen(),

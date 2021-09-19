@@ -1,30 +1,53 @@
 import 'dart:math';
 
 import 'package:assets_audio_player/assets_audio_player.dart';
+import 'package:bingo/screens/GameScreen/scoreCalculator.dart';
 import 'package:flutter/material.dart';
-
+import 'package:provider/provider.dart';
 import 'functions/findPoints.dart';
+import 'gameType.dart';
 
 class GameUserProvider extends ChangeNotifier {
   int recentSelected = -1;
   int points = 0;
   int tempPoints = 0;
   bool showAnimation = false;
-  static int m = 7;
+  static int m = 5;
   static Function? onUserClickCallback;
   List<Map> numbersList = getNumbersList(m);
   AssetsAudioPlayer player = AssetsAudioPlayer.newPlayer();
-  void onNumberSelected(int i, bool fromThisUserClicked) {
+  static GameType _gameType = GameType.offlineWithComp;
+  List numbersSelectedList = [];
+  // for online mod to send my list to others
+  sendNumbersList(Function callBack) {
+    callBack(numbersList);
+  }
+
+  void setGameType(GameType type) {
+    _gameType = type;
+  }
+
+  void onNumberSelected(int i, bool fromThisUserClicked, BuildContext context) {
     numbersList[i]['selected'] = true;
+
+    // for online users add to checkpoints
+
+    if (_gameType == GameType.onlineWithUSer) {
+      if (!numbersSelectedList.contains(numbersList[i]['no']))
+        numbersSelectedList.add(numbersList[i]['no']);
+      Provider.of<ScoreCalculator>(context, listen: false)
+          .makeSelected(numbersSelectedList);
+    }
+
     recentSelected = i;
     findPoints();
     notifyListeners();
     if (points > tempPoints) {
       print("got point");
       setShowAnimation();
-      pointSound();
+      // pointSound();
     } else {
-      clickSound(player);
+      // clickSound(player);
     }
     tempPoints = points;
     if (fromThisUserClicked) {
@@ -32,11 +55,11 @@ class GameUserProvider extends ChangeNotifier {
     }
   }
 
-  void onOtherUserNumberSelected(int num) {
+  void onOtherUserNumberSelected(int num, BuildContext context) {
     int i = 0;
     for (Map numberData in numbersList) {
       if (numberData['no'] == num) {
-        onNumberSelected(i, false);
+        onNumberSelected(i, false, context);
         break;
       }
       i++;
@@ -106,6 +129,7 @@ List<Map> getNumbersList(int m) {
     });
   }
 
+  // trigger users
   return _numbersList;
 }
 

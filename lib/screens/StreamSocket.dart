@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:socket_io_client/socket_io_client.dart';
 
+import 'GameScreen/scoreCalculator.dart';
+
 // STEP1:  Stream setup
 class StreamSocket {
   final _socketResponse = StreamController<Map>();
@@ -22,8 +24,9 @@ StreamSubscription<Map>? streamSubscription;
 class SocketController {
   static late Socket socket;
   static List usersList = [];
-  static late String _roomCode;
+  static late String _roomCode, _name;
   static void connectAndListen(bool admin, String roomCode, String name) {
+    _name = name;
     _roomCode = roomCode;
     socket = io(
         'http://192.168.1.9:3000',
@@ -51,7 +54,7 @@ class SocketController {
             .addResponse({'data': "$data", 'type': 'user_connected'});
       });
     } else {
-      socket.on('usersList', (data) {
+      socket.on('sendUsersList', (data) {
         print('users List is $data');
         usersList = data;
         stream_controller
@@ -67,12 +70,19 @@ class SocketController {
       print('start GAme');
       stream_controller.addResponse({'data': "$data", 'type': 'startGame'});
     });
+    socket.on('shareSortedList', (data) {
+      print(data.runtimeType);
+      List<Map> sortedList = List<Map>.from(data['sortedList']);
+      ScoreCalculator.addUserGrid(data['name'], sortedList);
+      // stream_controller.addResponse({'data': "$data", 'type': 'startGame'});
+    });
 
-    // socket.on('disconnect', (data) {
-    //   print("from server" + data);
-    //   controller.add("amal disconnect");
-    // });
-    socket.onDisconnect((_) => print('disconnect'));
+    socket.on('user-disconnected', (data) {
+      print("user disconnect" + data);
+      usersList.remove(data);
+      // controller.add("amal disconnect");
+    });
+    // socket.onDisconnect((_) => print('disconnect'));
   }
 
   static void sendMessage(String msg) {
@@ -85,8 +95,8 @@ class SocketController {
     socket.emit('startGame', {_roomCode, usersList[randomNumber]});
   }
 
-  static void shareSortedList(List sortedList) {
-    socket.emit('shareSortedList', {_roomCode, sortedList});
+  static void shareSortedList(List<Map> sortedList) {
+    socket.emit('shareSortedList', {_roomCode, _name, sortedList});
   }
 
   static void dispose() {

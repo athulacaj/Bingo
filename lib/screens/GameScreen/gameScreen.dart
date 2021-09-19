@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:bingo/Colors.dart';
+import 'package:bingo/screens/GameScreen/scoreCalculator.dart';
 import 'package:bingo/screens/StreamSocket.dart';
 import 'package:bingo/screens/compUserScreen/compUserIndexScreen.dart';
 import 'package:bingo/screens/userScreen/userIndexScreen.dart';
@@ -54,21 +55,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void onlineUserFn() {
+    // send my arrayList to other user
+    Provider.of<GameUserProvider>(context, listen: false)
+        .sendNumbersList((List<Map> numbersList) {
+      SocketController.shareSortedList(numbersList);
+    });
     for (String user in widget.usersList!) userScoreData[user] = 0;
     whoseTurn = widget.whoseTurn!;
     print("called stream listen");
-    // controller.dispose();
-    // _streamSubscription = controller.getResponse.listen((event) {
-    //   // if (event['type'] == 'user_connected') if (!usersList
-    //   //     .contains(event['data'])) usersList.add(event['data']);
-    //   //
-    //   // print(usersList);
-    //   // if (event['type'] == 'game') chatsList.add(event['data']);
-    //
-    //   Provider.of<GameControllerProvider>(context, listen: false)
-    //       .setUserTurn(false);
-    //   setState(() {});
-    // });
     if (streamSubscription != null) {
       streamSubscription!.onData((Map data) {
         print(data);
@@ -80,6 +74,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   void setGameDetails() {
     Provider.of<GameControllerProvider>(context, listen: false)
+        .setGameType(widget.gameType);
+
+    Provider.of<GameUserProvider>(context, listen: false)
         .setGameType(widget.gameType);
 
     GameUserProvider.m = 5;
@@ -98,7 +95,7 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
     };
     GameComputerProvider.onUserClickCallback = (int num) {
       Provider.of<GameUserProvider>(context, listen: false)
-          .onOtherUserNumberSelected(num);
+          .onOtherUserNumberSelected(num, context);
       pointsController(() {
         shiftTurn();
       });
@@ -153,7 +150,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     size = MediaQuery.of(context).size;
     bool isWeb = KisWeb(size);
-
+    if (widget.gameType == GameType.onlineWithUSer)
+      userScoreData = ScoreCalculator.pointsData;
     return Scaffold(
       body: SafeArea(
         child: Stack(
@@ -221,9 +219,14 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                     width: size.width,
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: Wrap(
-                        direction: isWeb ? Axis.vertical : Axis.horizontal,
-                        children: buildUsersWidget(),
+                      child: Consumer<ScoreCalculator>(
+                        builder: (context, value, child) {
+                          userScoreData = ScoreCalculator.pointsData;
+                          return Wrap(
+                            direction: isWeb ? Axis.vertical : Axis.horizontal,
+                            children: buildUsersWidget(),
+                          );
+                        },
                       ),
                     ),
                   )
