@@ -1,5 +1,5 @@
 import 'dart:ui';
 
 bool KisWeb(Size size) {
-  return size.width + 185 > size.height;
+  return size.width + 150 > size.height;
 }

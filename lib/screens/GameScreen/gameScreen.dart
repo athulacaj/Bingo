@@ -12,6 +12,7 @@ import 'package:bingo/utility/gameCompProvider.dart';
 import 'package:bingo/utility/gameType.dart';
 import 'package:bingo/utility/gameUserProvider.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart';
@@ -21,7 +22,14 @@ class GameScreen extends StatefulWidget {
   final GameType gameType;
   final List? usersList;
   final String? whoseTurn;
-  const GameScreen({required this.gameType, this.usersList, this.whoseTurn});
+  final String? myName;
+  final bool? isAdmin;
+  const GameScreen(
+      {required this.gameType,
+      this.usersList,
+      this.whoseTurn,
+      this.myName,
+      this.isAdmin});
 
   @override
   _GameScreenState createState() => _GameScreenState();
@@ -33,9 +41,9 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   late Size size;
   Map userScoreData = {};
   late String whoseTurn;
+  late int _firstUserPayedIndex;
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _showWinBanner = true;
     SystemChrome.setEnabledSystemUIOverlays([SystemUiOverlay.bottom]);
@@ -46,7 +54,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   @override
   void didChangeDependencies() {
-    // TODO: implement didChangeDependencies
     super.didChangeDependencies();
     size = MediaQuery.of(context).size;
 
@@ -56,20 +63,66 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   void onlineUserFn() {
     // send my arrayList to other user
+    ScoreCalculator.initFunctions(widget.usersList!);
+    _firstUserPayedIndex = widget.usersList!.indexOf(widget.whoseTurn!);
     Provider.of<GameUserProvider>(context, listen: false)
         .sendNumbersList((List<Map> numbersList) {
       SocketController.shareSortedList(numbersList);
     });
     for (String user in widget.usersList!) userScoreData[user] = 0;
     whoseTurn = widget.whoseTurn!;
-    print("called stream listen");
+    WidgetsBinding.instance!.addPostFrameCallback((_) =>
+        Provider.of<GameControllerProvider>(context, listen: false)
+            .setUserTurn(whoseTurn == widget.myName));
+    // print("called stream listen");
+    GameUserProvider gameUserProvider =
+        Provider.of<GameUserProvider>(context, listen: false);
     if (streamSubscription != null) {
       streamSubscription!.onData((Map data) {
         print(data);
+        // received selected list from last user selected
+        if (data['type'] == "shareSelectedNum") {
+          gameUserProvider.onOtherUserNumberSelected(
+              data['data']['num'], context);
+
+          whoseTurn =
+              whoseTurnFunction(gameUserProvider.numbersSelectedList.length);
+        } else if (data['type'] == "startGame") {
+          ScoreCalculator.reset();
+          resetGame();
+          onlineUserFn();
+        } else if (data['type'] == 'user_disconnected') {
+          whoseTurn =
+              whoseTurnFunction(gameUserProvider.numbersSelectedList.length);
+        }
         Provider.of<GameControllerProvider>(context, listen: false)
-            .setUserTurn(false);
+            .setUserTurn(whoseTurn == widget.myName);
+        if (mounted) setState(() {});
       });
     }
+  }
+
+  // online game
+  String whoseTurnFunction(int selectedListLength) {
+    List usersList = widget.usersList!;
+    int i = usersList.indexOf(whoseTurn);
+    Map scoreData = ScoreCalculator.pointsData;
+    int nextIndex =
+        (_firstUserPayedIndex + selectedListLength) % usersList.length;
+    // String nextUser=usersList[ne]
+    int maxIteration = 0;
+    int prvIndex = nextIndex;
+    while (scoreData[usersList[nextIndex]] >= 5) {
+      _firstUserPayedIndex = (_firstUserPayedIndex + 1) % usersList.length;
+      prvIndex = nextIndex;
+      nextIndex = (nextIndex + 1) % usersList.length;
+      maxIteration++;
+      if (maxIteration == usersList.length - 1) break;
+    }
+    print("${widget.myName} ${usersList[nextIndex]}");
+    return maxIteration != usersList.length
+        ? usersList[nextIndex]
+        : usersList[prvIndex];
   }
 
   void setGameDetails() {
@@ -141,9 +194,12 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
   }
 
   void resetGame() {
+    _showWinBanner = true;
+    userScoreData = {};
     Provider.of<GameUserProvider>(context, listen: false).reset();
     Provider.of<GameComputerProvider>(context, listen: false).reset();
     Provider.of<GameControllerProvider>(context, listen: false).reset();
+    setGameDetails();
   }
 
   @override
@@ -215,16 +271,16 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
             }),
             widget.gameType == GameType.onlineWithUSer
                 ? Positioned(
-                    top: 60,
+                    top: 55,
                     width: size.width,
                     child: Padding(
-                      padding: const EdgeInsets.all(8.0),
+                      padding: const EdgeInsets.all(4.0),
                       child: Consumer<ScoreCalculator>(
                         builder: (context, value, child) {
                           userScoreData = ScoreCalculator.pointsData;
                           return Wrap(
                             direction: isWeb ? Axis.vertical : Axis.horizontal,
-                            children: buildUsersWidget(),
+                            children: buildUsersWidget(false),
                           );
                         },
                       ),
@@ -260,23 +316,18 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                   : isWeb
                       ? size.width / 4
                       : 0,
-              top: isWeb || widget.gameType == GameType.offlineWithComp
+              top: isWeb
                   ? size.height * .2
-                  : size.height - (size.width - 40) - 10,
+                  : widget.gameType == GameType.offlineWithComp
+                      ? size.height - (size.width - 40) - 32
+                      : size.height / 3,
               child: SizedBox(
                 // height: (size.width - 40),
                 width: isWeb ? size.width / 2 : size.width,
                 child: UserIndexScreen(),
               ),
             ),
-            // Positioned(
-            //     bottom: 0,
-            //     left: 10,
-            //     child: FlatButton(
-            //         child: Text('Replay'),
-            //         onPressed: () {
-            //           resetGame();
-            //           setGameDetails();
+
             //         })),
             Positioned(
               top: isWeb ? size.height * .6 : size.height / 2,
@@ -318,7 +369,8 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                 : Container(),
             Consumer<GameControllerProvider>(
                 builder: (context, gameControllerProvider, child) {
-              return gameControllerProvider.isGameFinished
+              return _showReplayForOnlineGame(
+                      gameControllerProvider.isGameFinished)
                   ? Positioned(
                       top: 0,
                       left: 0,
@@ -330,54 +382,89 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
                           children: [
                             Spacer(),
                             _showWinBanner
-                                ? Container(
-                                    height: 110,
-                                    width: size.width,
-                                    color: Colors.white,
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        IconButton(
-                                            onPressed: () {
-                                              _showWinBanner = false;
-                                              setState(() {});
-                                            },
-                                            icon: Icon(Icons.close)),
-                                        Container(
-                                          child: Text(
-                                            "Result : $result",
-                                            style: TextStyle(
-                                                color: topColor,
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.w600),
-                                          ),
-                                          padding: EdgeInsets.all(18),
-                                        ),
-                                      ],
+                                ? ConstrainedBox(
+                                    constraints: BoxConstraints(minHeight: 110),
+                                    child: Container(
+                                      width: size.width,
+                                      color: Colors.white,
+                                      child: Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          IconButton(
+                                              onPressed: () {
+                                                _showWinBanner = false;
+                                                setState(() {});
+                                              },
+                                              icon: Icon(
+                                                Icons.close,
+                                                color: Colors.black,
+                                              )),
+                                          widget.gameType !=
+                                                  GameType.onlineWithUSer
+                                              ? Container(
+                                                  child: Text(
+                                                    "Result : $result",
+                                                    style: TextStyle(
+                                                        color: topColor,
+                                                        fontSize: 20,
+                                                        fontWeight:
+                                                            FontWeight.w600),
+                                                  ),
+                                                  padding: EdgeInsets.all(18),
+                                                )
+                                              : Padding(
+                                                  padding: const EdgeInsets.all(
+                                                      10.0),
+                                                  child: Column(
+                                                    children: [
+                                                      Text(
+                                                        "Rank ",
+                                                        style: TextStyle(
+                                                            color: topColor,
+                                                            fontSize: 20,
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .w600),
+                                                      ),
+                                                      Divider(
+                                                        color: Colors.black,
+                                                      ),
+                                                      SingleChildScrollView(
+                                                        child: Column(
+                                                          children:
+                                                              buildUsersWidget(
+                                                                  true),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                        ],
+                                      ),
                                     ),
                                   )
                                 : Container(),
                             Spacer(),
-                            FlatButton(
-                                color: Colors.orange,
-                                child: Text('   Replay   '),
-                                onPressed: () {
-                                  Provider.of<GameUserProvider>(context,
-                                          listen: false)
-                                      .reset();
-                                  Provider.of<GameComputerProvider>(context,
-                                          listen: false)
-                                      .reset();
-                                  Provider.of<GameControllerProvider>(context,
-                                          listen: false)
-                                      .reset();
-                                  setGameDetails();
-                                }),
+                            widget.gameType != GameType.onlineWithUSer ||
+                                    widget.isAdmin != null && widget.isAdmin!
+                                ? FlatButton(
+                                    color: Colors.orange,
+                                    child: Text('   Replay   '),
+                                    onPressed: () {
+                                      if (widget.gameType ==
+                                          GameType.onlineWithUSer) {
+                                        SocketController.startGame();
+                                      } else {
+                                        resetGame();
+                                      }
+                                    })
+                                : Container(),
                             SizedBox(height: 50),
                           ],
                         ),
-                      ))
+                      ),
+                    )
                   : Container();
             }),
           ],
@@ -388,7 +475,6 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    // TODO: implement dispose
     super.dispose();
     _scrollController.dispose();
 
@@ -409,25 +495,72 @@ class _GameScreenState extends State<GameScreen> with TickerProviderStateMixin {
 
   @override
   void deactivate() {
-    // TODO: implement deactivate
     resetGame();
     super.deactivate();
   }
 
-  List<Widget> buildUsersWidget() {
+  bool _showReplayForOnlineGame(bool isGameFinished) {
+    bool result = widget.gameType == GameType.onlineWithUSer;
+    if (result) {
+      List usersList = widget.usersList!;
+      for (String user in usersList) {
+        if (userScoreData[user] == null || userScoreData[user] < 5) {
+          return false;
+        }
+      }
+    } else {
+      return isGameFinished;
+    }
+    return true;
+  }
+
+  // online
+  List<Widget> buildUsersWidget(bool isFinalResult) {
     List usersList = widget.usersList!;
     List<Widget> toReturnList = [];
+    List<Map> toSortList = [];
     for (String user in usersList) {
+      int rank = ScoreCalculator.getUserRankDetail(user);
+      toSortList.add({'name': user, 'rank': rank});
+    }
+    if (isFinalResult)
+      toSortList.sort((Map a, Map b) => a['rank'] > b['rank'] ? 1 : 0);
+
+    for (Map userData in toSortList) {
+      String user = userData['name'];
+      int rank = ScoreCalculator.getUserRankDetail(user);
       toReturnList.add(
-        Container(
-          width: 130,
-          color: whoseTurn == user ? Colors.blueAccent : Colors.white,
-          padding: EdgeInsets.all(8),
-          height: 40,
-          child: Text(
-            "$user - ${userScoreData[user]}",
-            style: TextStyle(
-                color: whoseTurn == user ? Colors.white : Colors.black),
+        ConstrainedBox(
+          constraints: BoxConstraints(minWidth: 50, maxWidth: 150),
+          child: Container(
+            color: isFinalResult
+                ? Colors.white
+                : whoseTurn == user
+                    ? Colors.blueAccent
+                    : Colors.white,
+            padding: EdgeInsets.all(3),
+            height: kIsWeb ? 80 : 60,
+            child: Row(
+              children: [
+                rank == -1
+                    ? Container(width: 80)
+                    : rank < 4
+                        ? Image.asset("assets/images/rank$rank.png")
+                        : SizedBox(
+                            child: Text("$rank "),
+                            width: 80,
+                          ),
+                Text(
+                  "${user.substring(0, user.length > 5 ? 6 : user.length)} - ${userScoreData[user] ?? 0}",
+                  style: TextStyle(
+                      color: isFinalResult
+                          ? Colors.black
+                          : whoseTurn == user
+                              ? Colors.white
+                              : Colors.black),
+                ),
+              ],
+            ),
           ),
         ),
       );

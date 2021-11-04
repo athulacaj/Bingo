@@ -57,7 +57,7 @@ class BuildBox extends StatelessWidget {
                 child: Text(
                   "${data['no']}",
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 13),
+                  style: TextStyle(fontSize: 13, color: Colors.black),
                 )),
           ),
         ),

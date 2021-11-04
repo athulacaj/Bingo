@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:assets_audio_player/assets_audio_player.dart';
 import 'package:bingo/screens/GameScreen/scoreCalculator.dart';
+import 'package:bingo/screens/StreamSocket.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'functions/findPoints.dart';
@@ -37,6 +38,8 @@ class GameUserProvider extends ChangeNotifier {
         numbersSelectedList.add(numbersList[i]['no']);
       Provider.of<ScoreCalculator>(context, listen: false)
           .makeSelected(numbersSelectedList);
+      if (fromThisUserClicked)
+        SocketController.shareSelectedNum(numbersList[i]['no']);
     }
 
     recentSelected = i;
@@ -45,9 +48,9 @@ class GameUserProvider extends ChangeNotifier {
     if (points > tempPoints) {
       print("got point");
       setShowAnimation();
-      // pointSound();
+      pointSound();
     } else {
-      // clickSound(player);
+      clickSound(player);
     }
     tempPoints = points;
     if (fromThisUserClicked) {
@@ -79,6 +82,7 @@ class GameUserProvider extends ChangeNotifier {
     numbersList = getNumbersList(m);
     points = 0;
     tempPoints = 0;
+    numbersSelectedList = [];
     notifyListeners();
   }
 

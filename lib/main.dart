@@ -11,7 +11,7 @@ import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:socket_io_client/socket_io_client.dart';
 import 'screens/GameScreen/gameScreen.dart';
 import 'screens/HomeScreen.dart';
-import 'screens/StreamHome.dart';
+import 'screens/multiplayer/multiPlayerHome.dart';
 import 'screens/StreamSocket.dart';
 import 'test.dart';
 import 'utility/gameControllerProvider.dart';
@@ -35,22 +35,24 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    SystemChrome.setEnabledSystemUIOverlays([]);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'ClearIt server',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        primaryColor: Color(0xff7f86ff),
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-        tabBarTheme: TabBarTheme(
-            labelColor: Colors.black, unselectedLabelColor: Colors.grey),
-      ),
-
+      title: 'Bingo',
+      // theme: ThemeData(
+      //   primarySwatch: Colors.blue,
+      //   primaryColor: Color(0xff7f86ff),
+      //   visualDensity: VisualDensity.adaptivePlatformDensity,
+      //   tabBarTheme: TabBarTheme(
+      //       labelColor: Colors.black, unselectedLabelColor: Colors.grey),
+      // ),
+      theme: ThemeData.dark(),
       // home: GameScreen(),
       initialRoute: '/HomeScreen',
       routes: {
         '/HomeScreen': (context) => HomeScreen(),
-        '/StreamHomeScreen': (context) => StreamHomeScreen(),
+        '/StreamHomeScreen': (context) => MultiPlayerHome(),
       },
     );
   }

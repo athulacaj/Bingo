@@ -2,7 +2,7 @@ import 'package:bingo/utility/gameType.dart';
 import 'package:flutter/material.dart';
 
 import 'GameScreen/gameScreen.dart';
-import 'StreamHome.dart';
+import 'multiplayer/multiPlayerHome.dart';
 import 'with computer/play_with_computer.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -23,18 +23,20 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        for (int i = 0; i < 3; i++)
-          InkWell(
-              onTap: () {
-                _onButtonClick(i);
-              },
-              child: Container(
-                  alignment: Alignment.center,
-                  height: 50,
-                  child: Text(_options[i])))
-      ])),
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+            for (int i = 0; i < _options.length; i++)
+              InkWell(
+                  onTap: () {
+                    _onButtonClick(i);
+                  },
+                  child: Container(
+                      alignment: Alignment.center,
+                      height: 80,
+                      child: Text(_options[i])))
+          ])),
     );
   }
 
@@ -50,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   GameScreen(gameType: GameType.offlineWithUser)));
     } else if (i == 2) {
       Navigator.push(
-          context, MaterialPageRoute(builder: (context) => StreamHomeScreen()));
+          context, MaterialPageRoute(builder: (context) => MultiPlayerHome()));
     }
   }
 }

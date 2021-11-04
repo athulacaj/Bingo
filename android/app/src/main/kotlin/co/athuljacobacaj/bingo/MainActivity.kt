@@ -1,4 +1,4 @@
-package co.athuljacobacaj.bingo.bingo
+package co.athuljacobacaj.bingo
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -29,7 +29,7 @@ class SocketController {
     _name = name;
     _roomCode = roomCode;
     socket = io(
-        'http://192.168.1.9:3000',
+        'https://mybingoserver.herokuapp.com',
         OptionBuilder()
             .setTransports(['websocket']) // for Flutter or Dart VM
             .disableAutoConnect() // disable auto-connection
@@ -63,43 +63,58 @@ class SocketController {
     }
 
     socket.on('receiveMessages', (data) {
-      print("from server " + data);
-      stream_controller.addResponse({'data': "$data", 'type': 'chat'});
+      stream_controller.addResponse(
+          {'data': "${data['name']}?${data['message']}", 'type': 'chat'});
     });
     socket.on('startGame', (data) {
-      print('start GAme');
       stream_controller.addResponse({'data': "$data", 'type': 'startGame'});
     });
     socket.on('shareSortedList', (data) {
-      print(data.runtimeType);
       List<Map> sortedList = List<Map>.from(data['sortedList']);
       ScoreCalculator.addUserGrid(data['name'], sortedList);
       // stream_controller.addResponse({'data': "$data", 'type': 'startGame'});
     });
 
+    socket.on('shareSelectedNum', (data) {
+      stream_controller.addResponse({'data': data, 'type': 'shareSelectedNum'});
+    });
+
     socket.on('user-disconnected', (data) {
       print("user disconnect" + data);
       usersList.remove(data);
-      // controller.add("amal disconnect");
+      stream_controller
+          .addResponse({'data': "$data", 'type': 'user_disconnected'});
     });
     // socket.onDisconnect((_) => print('disconnect'));
   }
 
-  static void sendMessage(String msg) {
-    socket.emit('sendMessage', {_roomCode, msg});
+  static void sendMessage(String msg, String name) {
+    socket.emit('sendMessage', {_roomCode, msg, name});
   }
 
-  static void startGame() {
+  static void startGame({String? user}) {
     Random random = new Random();
     int randomNumber = random.nextInt(usersList.length);
-    socket.emit('startGame', {_roomCode, usersList[randomNumber]});
+    if (user != null) {
+      socket.emit('startGame', {_roomCode, user});
+    } else {
+      socket.emit('startGame', {_roomCode, usersList[randomNumber]});
+    }
   }
 
   static void shareSortedList(List<Map> sortedList) {
     socket.emit('shareSortedList', {_roomCode, _name, sortedList});
   }
 
+  static void shareSelectedNum(int num) {
+    socket.emit('shareSelectedNum', {_roomCode, _name, num});
+  }
+
   static void dispose() {
+    if (socket.connected || socket.active) {
+      socket.disconnect();
+      socket.destroy();
+    }
     socket.dispose();
   }
 }

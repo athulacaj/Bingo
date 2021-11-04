@@ -9,6 +9,8 @@ import 'gameUserProvider.dart';
 
 // vs comptuter
 
+enum GameLevel { Easy, Medium, Hard }
+
 class GameComputerProvider extends ChangeNotifier {
   int recentSelected = -1;
   int points = 0;
@@ -17,6 +19,17 @@ class GameComputerProvider extends ChangeNotifier {
   static int m = 7;
   List<Map> numbersList = getNumbersList(m);
   static Function? onUserClickCallback;
+  static GameLevel _gameLevel = GameLevel.Easy;
+
+  static setGameLevel(int i) {
+    if (i == 0) {
+      _gameLevel = GameLevel.Easy;
+    } else if (i == 1) {
+      _gameLevel = GameLevel.Medium;
+    } else if (i == 2) {
+      _gameLevel = GameLevel.Hard;
+    }
+  }
 
   void onNumberSelected(int i) {
     numbersList[i]['selected'] = true;
@@ -82,7 +95,7 @@ class GameComputerProvider extends ChangeNotifier {
   }
 
   void play(BuildContext context) {
-    AutoPlay autoPlay = AutoPlay(m, numbersList);
+    AutoPlay autoPlay = AutoPlay(m, numbersList, _gameLevel);
     List probList = autoPlay.getTotalProbalityList(m, numbersList);
     // autoPlay.increaseProbabilityIfIndexSame(probList);
     List<Map> usersList =
@@ -90,7 +103,8 @@ class GameComputerProvider extends ChangeNotifier {
     List usersProbList = autoPlay.getTotalProbalityList(m, usersList);
 
     // if hard
-    autoPlay.compareWithUserAndSelect(probList, usersProbList);
+    if (_gameLevel == GameLevel.Hard)
+      autoPlay.compareWithUserAndSelect(probList, usersProbList);
 
     int result = autoPlay.findMaxProbIndex(probList);
     if (result != -1) {

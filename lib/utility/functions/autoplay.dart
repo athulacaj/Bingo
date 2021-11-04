@@ -1,10 +1,13 @@
 import 'dart:math';
 
+import 'package:bingo/utility/gameCompProvider.dart';
+
 class AutoPlay {
   static int currentMaximumProbability = 2;
   late int m;
   late List<Map> numbersList;
-  AutoPlay(this.m, this.numbersList);
+  late GameLevel _gameLevel;
+  AutoPlay(this.m, this.numbersList, this._gameLevel);
   int findMaxProbIndex(List probList) {
     if (probList.isEmpty) {
       return -1;
@@ -23,6 +26,7 @@ class AutoPlay {
     List d = playDiagonal(m, numbersList);
     List h = playHorizontal(m, numbersList);
     List v = playVertical(m, numbersList);
+    if (_gameLevel == GameLevel.Easy) return h + v + d;
     return d + h + v;
   }
 
